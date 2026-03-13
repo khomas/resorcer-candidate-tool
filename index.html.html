@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resorcer — Генератор профілю кандидата</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f3ef; --surface: #ffffff; --surface2: #f0ede8;
+  --border: #e2ddd6; --border2: #ccc8c0;
+  --text: #1a1816; --text2: #6b6560; --text3: #9c978f;
+  --accent: #2d5a3d; --accent-light: #e8f0ea; --accent-mid: #c5dbc9; --accent-text: #1e3d29;
+  --danger: #c0392b; --danger-light: #fdf0ef;
+  --amber: #b8631a; --amber-light: #fef3e8; --amber-border: #f0d4b0;
+  --radius: 10px; --radius-lg: 16px;
+  --sans: 'DM Sans', sans-serif; --mono: 'DM Mono', monospace;
+}
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+.app { max-width: 740px; margin: 0 auto; padding: 28px 20px 80px; }
+.header { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+.logo { width: 38px; height: 38px; background: var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.logo svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.header-text h1 { font-size: 18px; font-weight: 500; letter-spacing: -0.02em; }
+.header-text p { font-size: 13px; color: var(--text3); margin-top: 1px; }
+.api-bar { background: var(--amber-light); border: 1px solid var(--amber-border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 20px; }
+.api-bar p { font-size: 12px; color: var(--amber); margin-bottom: 8px; }
+.api-bar p strong { font-weight: 500; }
+.api-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.api-inputs input { font-size: 12px; padding: 7px 10px; border: 1px solid var(--amber-border); border-radius: 7px; background: #fff; font-family: var(--mono); width: 100%; color: var(--text); }
+.api-inputs input:focus { outline: none; border-color: var(--border2); }
+.tabs { display: flex; gap: 2px; background: var(--surface2); border-radius: var(--radius); padding: 3px; margin-bottom: 20px; border: 1px solid var(--border); }
+.tab { flex: 1; font-size: 13px; font-family: var(--sans); color: var(--text2); background: transparent; border: none; border-radius: 8px; padding: 8px 10px; cursor: pointer; transition: all 0.15s; font-weight: 400; }
+.tab.active { background: var(--surface); color: var(--text); font-weight: 500; border: 1px solid var(--border); }
+.section { display: none; }
+.section.active { display: block; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 24px; margin-bottom: 14px; }
+.card-title { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 16px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 12px; color: var(--text2); }
+input[type="text"], select, textarea {
+  font-family: var(--sans); font-size: 14px; color: var(--text);
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 9px 12px; width: 100%;
+  transition: border-color 0.15s, background 0.15s; -webkit-appearance: none;
+}
+input[type="text"]:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); background: #fff; }
+textarea { min-height: 110px; resize: vertical; line-height: 1.6; }
+select { cursor: pointer; }
+.upload-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius); padding: 18px 16px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--surface2); position: relative; }
+.upload-zone:hover { border-color: var(--accent); background: var(--accent-light); }
+.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-zone svg { width: 20px; height: 20px; stroke: var(--text3); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 5px; }
+.upload-zone p { font-size: 13px; color: var(--text2); }
+.upload-zone span { font-size: 11px; color: var(--text3); }
+.upload-zone.has-file { border-color: var(--accent); background: var(--accent-light); }
+.upload-zone.has-file p { color: var(--accent-text); font-weight: 500; }
+.upload-zone.has-file svg { stroke: var(--accent); }
+.notes-toolbar { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; flex-wrap: wrap; }
+.notes-toolbar-hint { font-size: 12px; color: var(--text3); margin-left: auto; }
+.btn-icon { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-family: var(--sans); color: var(--text2); background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.btn-icon:hover { border-color: var(--border2); background: #fff; color: var(--text); }
+.btn-icon svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.btn-icon.recording { background: var(--danger-light); border-color: #f5c6c2; color: var(--danger); }
+.btn-icon:disabled { opacity: 0.5; cursor: not-allowed; }
+.format-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.pill { font-size: 12px; font-family: var(--sans); padding: 5px 12px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); cursor: pointer; transition: all 0.15s; }
+.pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.actions { display: flex; gap: 10px; margin-top: 18px; }
+.btn-primary { flex: 1; font-family: var(--sans); font-size: 14px; font-weight: 500; color: #fff; background: var(--accent); border: none; border-radius: var(--radius); padding: 12px 20px; cursor: pointer; transition: opacity 0.15s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-primary:active { transform: scale(0.99); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.btn-secondary { font-family: var(--sans); font-size: 14px; color: var(--text2); background: transparent; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 18px; cursor: pointer; transition: all 0.15s; }
+.btn-secondary:hover { border-color: var(--border2); color: var(--text); background: var(--surface2); }
+.spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.status { font-size: 12px; color: var(--text3); text-align: center; padding: 6px; min-height: 28px; }
+.status.error { color: var(--danger); }
+.output-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-top: 6px; overflow: hidden; display: none; }
+.output-card.visible { display: block; }
+.output-header { padding: 18px 22px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; }
+.avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--accent-light); color: var(--accent-text); font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--accent-mid); }
+.output-meta { flex: 1; }
+.output-meta h2 { font-size: 16px; font-weight: 500; letter-spacing: -0.01em; }
+.output-meta p { font-size: 13px; color: var(--text3); margin-top: 2px; }
+.output-format-bar { display: flex; gap: 5px; flex-wrap: wrap; padding: 12px 22px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.fmt-btn { font-size: 12px; font-family: var(--sans); padding: 4px 10px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); cursor: pointer; transition: all 0.15s; }
+.fmt-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.output-actions { display: flex; gap: 8px; margin-left: auto; }
+.btn-copy { font-size: 12px; font-family: var(--sans); color: var(--accent); background: var(--accent-light); border: 1px solid var(--accent-mid); border-radius: 7px; padding: 5px 12px; cursor: pointer; font-weight: 500; }
+.btn-copy:hover { background: #daeede; }
+.output-body { padding: 22px; font-size: 14px; line-height: 1.8; color: var(--text); white-space: pre-wrap; font-family: var(--sans); }
+.style-info { font-size: 12px; color: var(--text3); background: var(--surface2); border-radius: var(--radius); padding: 10px 14px; margin-top: 10px; border: 1px solid var(--border); }
+.style-info strong { color: var(--text2); font-weight: 500; }
+@media (max-width: 560px) {
+  .row2, .row3 { grid-template-columns: 1fr; }
+  .api-inputs { grid-template-columns: 1fr; }
+  .tabs { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div class="header-text">
+      <h1>Генератор профілю кандидата</h1>
+      <p>Resorcer · CV + запис співбесіди → готова презентація для клієнта</p>
+    </div>
+  </div>
+
+  <div class="api-bar">
+    <p><strong>API-ключі</strong> — зберігаються лише у цій вкладці браузера, нікуди не передаються.</p>
+    <div class="api-inputs">
+      <input type="password" id="anthropic-key" placeholder="Anthropic ключ (sk-ant-...)">
+      <input type="password" id="gemini-key" placeholder="Gemini ключ (AIza...) — для транскрипції">
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('generate', this)">Створити профіль</button>
+    <button class="tab" onclick="switchTab('style', this)">Мій стиль</button>
+    <button class="tab" onclick="switchTab('template', this)">Налаштування шаблону</button>
+  </div>
+
+  <!-- ВКЛ: СТВОРИТИ ПРОФІЛЬ -->
+  <div class="section active" id="tab-generate">
+
+    <div class="card">
+      <div class="card-title">Дані кандидата</div>
+      <div class="row2" style="margin-bottom:14px">
+        <div class="field">
+          <label>Ім'я кандидата</label>
+          <input type="text" id="cand-name" placeholder="Автозаповнення з CV або введіть вручну">
+        </div>
+        <div class="field">
+          <label>Позиція</label>
+          <input type="text" id="cand-role" placeholder="напр. Head of Product">
+        </div>
+      </div>
+      <div class="row3">
+        <div class="field">
+          <label>Ім'я клієнта (для звернення)</label>
+          <input type="text" id="client-name" placeholder="напр. Антон">
+        </div>
+        <div class="field">
+          <label>Тип інтерв'ю</label>
+          <select id="cand-type">
+            <option value="screening">Перший скринінг</option>
+            <option value="technical">Технічне</option>
+            <option value="competency">Компетенційне</option>
+            <option value="final">Фінальний раунд</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Мова виводу</label>
+          <select id="cand-lang">
+            <option value="ukrainian">Українська</option>
+            <option value="english">Англійська</option>
+            <option value="both">Обидві</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">CV / Резюме</div>
+      <div class="upload-zone" id="cv-zone">
+        <input type="file" id="cv-file" accept=".pdf,.doc,.docx,.txt" onchange="handleCVUpload(this)">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <p id="cv-label">Завантажте CV — автозаповнить ім'я, посаду, компанію</p>
+        <span>PDF, DOC, DOCX, TXT</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Запис співбесіди та нотатки</div>
+      <div class="upload-zone" id="audio-zone" style="margin-bottom:12px">
+        <input type="file" id="audio-file" accept=".mp3,.mp4,.wav,.m4a,.ogg,.webm" onchange="handleAudioUpload(this)">
+        <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <p id="audio-label">Завантажте запис → Gemini транскрибує українською</p>
+        <span>MP3, MP4, WAV, M4A</span>
+      </div>
+      <div class="notes-toolbar">
+        <button class="btn-icon" id="mic-btn" onclick="toggleMic()">
+          <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          <span id="mic-label">Надиктувати нотатки</span>
+        </button>
+        <button class="btn-icon" id="transcribe-btn" onclick="transcribeAudio()" style="display:none">
+          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span>Транскрибувати запис</span>
+        </button>
+        <span class="notes-toolbar-hint">або введіть текст нижче</span>
+      </div>
+      <textarea id="cand-notes" placeholder="Чорновик нотаток — пишіть як є, потоком свідомості, як після дзвінка..."></textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Формат виводу</div>
+      <div class="format-pills" id="format-pills">
+        <button class="pill active" data-fmt="resorcer" onclick="selectFormat(this)">Стандарт Resorcer</button>
+        <button class="pill" data-fmt="email" onclick="selectFormat(this)">Готовий лист</button>
+        <button class="pill" data-fmt="narrative" onclick="selectFormat(this)">Наратив</button>
+        <button class="pill" data-fmt="structured" onclick="selectFormat(this)">Структурований</button>
+        <button class="pill" data-fmt="ashby" onclick="selectFormat(this)">Нотатка Ashby</button>
+      </div>
+      <div class="field">
+        <label>Рекомендація рекрутера</label>
+        <select id="cand-rec">
+          <option value="auto">AI оцінить за нотатками</option>
+          <option value="proceed">Рекомендую — рухаємось далі</option>
+          <option value="hold">Поки відкладаємо</option>
+          <option value="reject">Не рекомендую</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" id="gen-btn" onclick="generateProfile()">
+        <span id="gen-label">Створити профіль</span>
+      </button>
+      <button class="btn-secondary" onclick="clearAll()">Очистити</button>
+    </div>
+    <div class="status" id="status-bar"></div>
+
+    <div class="output-card" id="output-card">
+      <div class="output-header">
+        <div class="avatar" id="out-avatar"></div>
+        <div class="output-meta">
+          <h2 id="out-name"></h2>
+          <p id="out-role-label"></p>
+        </div>
+        <div class="output-actions">
+          <button class="btn-copy" onclick="copyProfile()">Копіювати</button>
+        </div>
+      </div>
+      <div class="output-format-bar" id="output-fmt-bar"></div>
+      <div class="output-body" id="out-body"></div>
+    </div>
+
+  </div>
+
+  <!-- ВКЛ: МІЙ СТИЛЬ -->
+  <div class="section" id="tab-style">
+    <div class="card">
+      <div class="card-title">Ваш особистий стиль</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">Завантажте 1–2 власні приклади презентацій кандидатів. Інструмент навчиться вашому тону, формулюванням та структурі й застосує їх поверх базового шаблону Resorcer.</p>
+      <div class="upload-zone" id="style-zone">
+        <input type="file" id="style-file" accept=".pdf,.doc,.docx,.txt" multiple onchange="handleStyleUpload(this)">
+        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <p id="style-label">Завантажте ваші приклади презентацій</p>
+        <span>PDF, DOCX, TXT · до 2 файлів</span>
+      </div>
+      <div class="style-info" id="style-status" style="display:none"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Персональні налаштування</div>
+      <div class="field" style="margin-bottom:14px">
+        <label>Ваше ім'я (відображається у підписі профілю)</label>
+        <input type="text" id="recruiter-name" placeholder="напр. Олена">
+      </div>
+      <div class="field" style="margin-bottom:14px">
+        <label>Підпис / завершальна фраза</label>
+        <input type="text" id="recruiter-sig" placeholder="напр. З повагою, Олена, Resorcer">
+      </div>
+      <div class="field">
+        <label>Нотатки щодо вашого стилю (необов'язково)</label>
+        <textarea id="style-notes" style="min-height:80px" placeholder="напр. Пишу короткими пунктами, завжди згадую статус військового обліку, зарплату не пишу у вигляді діапазону..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВКЛ: НАЛАШТУВАННЯ ШАБЛОНУ -->
+  <div class="section" id="tab-template">
+    <div class="card">
+      <div class="card-title">Базовий шаблон Resorcer</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">Шаблон завантажено з наявних презентацій вашої команди. Редагуйте, щоб змінити стандартні розділи, тон або обов'язкові поля для всіх профілів.</p>
+      <textarea id="base-template" style="min-height:320px;font-size:13px;font-family:var(--mono)"></textarea>
+    </div>
+    <div class="card">
+      <div class="card-title">Обов'язково в кожному профілі</div>
+      <div class="field" style="margin-bottom:12px">
+        <label>Обов'язкові розділи (через кому)</label>
+        <input type="text" id="required-sections" value="Релевантний досвід і досягнення, Переваги, Ризики, Мотивація, Очікування по оплаті, Локація">
+      </div>
+      <div class="field">
+        <label>Додаткові інструкції для всіх профілів</label>
+        <textarea id="global-instruction" style="min-height:70px" placeholder="напр. Завжди запитувати про статус військового обліку та вказувати у профілі. Зазначати готовність до релокації."></textarea>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const RESORCER_TEMPLATE = `ШАБЛОН ПРЕЗЕНТАЦІЇ КАНДИДАТА — RESORCER
+
+Вступ: "[Ім'я клієнта], доброго дня! Презентуємо кандидата на позицію [Роль], [ПІБ кандидата]."
+
+Розділи (використовувати точно такі заголовки):
+
+1. РЕЛЕВАНТНИЙ ДОСВІД І ДОСЯГНЕННЯ:
+   - Почати із загальної кількості років досвіду та ключових галузей
+   - Писати розгорнутими наративними абзацами (не буліти) — розповідь про кар'єру
+   - Включати конкретні вимірювані досягнення: розміри команд, бюджети, терміни
+   - Згадати поточну компанію/роль і скільки там працює
+   - Висвітлити 2–3 попередніх ключових місця роботи з конкретним впливом
+
+2. ПЕРЕВАГИ:
+   - 3–5 пронумерованих пунктів
+   - Кожен пункт — окрема сильна сторона з коротким поясненням
+   - Конкретно — уникати загальних фраз на зразок "сильний комунікатор"
+
+3. РИЗИКИ:
+   - 1–3 чесних ризик-фактори
+   - Писати прямо — це формує довіру клієнта
+   - Може бути одне речення або короткий абзац
+
+4. МОТИВАЦІЯ:
+   - 2–4 речення про те, ЧОМУ шукає / що хоче далі
+   - Акцент на тому, що рухає людиною, а не лише на умовах
+
+5. ОЧІКУВАННЯ ПО ОПЛАТІ:
+   - Формат: "від [сума] [валюта] нет." або "від [сума] грн. нет. (~[еквівалент у USD])"
+
+6. ЛОКАЦІЯ:
+   - Поточне місто
+   - Готовність до релокації (одне речення)
+
+ПРАВИЛА СТИЛЮ:
+- Теплий, але професійний тон — як довірений партнер, що рекомендує колезі
+- Починати з найвражаючих або найрелевантніших фактів
+- Досвід — як наративна розповідь, не список із CV
+- Чесно писати про ризики — це відрізняє Resorcer
+- Без слів-паразитів і загальних суперлятивів
+- Мова за замовчуванням — українська`;
+
+document.getElementById('base-template').value = RESORCER_TEMPLATE;
+
+let selectedFormat = 'resorcer';
+let audioFileData = null;
+let cvFileData = null;
+let styleExamples = '';
+let isRecording = false;
+let recognition = null;
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function selectFormat(el) {
+  document.querySelectorAll('.format-pills .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  selectedFormat = el.dataset.fmt;
+}
+
+function setStatus(msg, isError) {
+  const bar = document.getElementById('status-bar');
+  bar.textContent = msg;
+  bar.className = 'status' + (isError ? ' error' : '');
+}
+
+function getKeys() {
+  return {
+    anthropic: document.getElementById('anthropic-key').value.trim(),
+    gemini: document.getElementById('gemini-key').value.trim()
+  };
+}
+
+function handleCVUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('cv-zone').classList.add('has-file');
+  document.getElementById('cv-label').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => { cvFileData = { name: file.name, data: e.target.result, type: file.type }; };
+  reader.readAsDataURL(file);
+}
+
+function handleAudioUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('audio-zone').classList.add('has-file');
+  document.getElementById('audio-label').textContent = file.name + ' — готово до транскрипції';
+  document.getElementById('transcribe-btn').style.display = 'inline-flex';
+  const reader = new FileReader();
+  reader.onload = e => { audioFileData = { name: file.name, data: e.target.result, type: file.type }; };
+  reader.readAsDataURL(file);
+}
+
+function handleStyleUpload(input) {
+  const files = Array.from(input.files).slice(0, 2);
+  if (!files.length) return;
+  document.getElementById('style-zone').classList.add('has-file');
+  document.getElementById('style-label').textContent = files.map(f => f.name).join(', ');
+  let loaded = 0;
+  let combined = '';
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      combined += '\n\n---ПРИКЛАД---\n' + e.target.result;
+      loaded++;
+      if (loaded === files.length) {
+        styleExamples = combined;
+        const info = document.getElementById('style-status');
+        info.style.display = 'block';
+        info.innerHTML = '<strong>Стиль завантажено.</strong> Ваші особисті приклади впливатимуть на тон, формулювання та структуру наступних генерацій.';
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
+function toggleMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { setStatus('Голосовий ввід не підтримується — використовуйте Chrome або Edge', true); return; }
+  if (isRecording) { recognition.stop(); return; }
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = document.getElementById('cand-lang').value === 'english' ? 'en-US' : 'uk-UA';
+  let finalText = document.getElementById('cand-notes').value;
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    document.getElementById('mic-label').textContent = 'Зупинити диктування';
+  };
+  recognition.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    document.getElementById('cand-notes').value = finalText + interim;
+  };
+  recognition.onend = () => {
+    isRecording = false;
+    document.getElementById('mic-btn').classList.remove('recording');
+    document.getElementById('mic-label').textContent = 'Надиктувати нотатки';
+    document.getElementById('cand-notes').value = finalText;
+  };
+  recognition.start();
+}
+
+async function transcribeAudio() {
+  const { gemini } = getKeys();
+  if (!gemini) { setStatus('Спочатку введіть Gemini API-ключ', true); return; }
+  if (!audioFileData) return;
+  const btn = document.getElementById('transcribe-btn');
+  btn.disabled = true;
+  btn.querySelector('span').textContent = 'Транскрибується...';
+  setStatus('Транскрипція через Gemini...');
+  try {
+    const base64 = audioFileData.data.split(',')[1];
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${gemini}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [
+        { text: 'Транскрибуй цей запис співбесіди точно українською мовою. Якщо є два мовці, познач їх "Рекрутер:" та "Кандидат:". Виводь лише текст транскрипції.' },
+        { inline_data: { mime_type: audioFileData.type || 'audio/mp3', data: base64 } }
+      ]}]})
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    const transcript = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const cur = document.getElementById('cand-notes').value;
+    document.getElementById('cand-notes').value = cur ? cur + '\n\n' + transcript : transcript;
+    setStatus('Транскрипцію завершено — перевірте та відредагуйте за потреби.');
+    setTimeout(() => setStatus(''), 3000);
+  } catch(e) { setStatus('Помилка транскрипції: ' + e.message, true); }
+  btn.disabled = false;
+  btn.querySelector('span').textContent = 'Транскрибувати запис';
+}
+
+async function parseCVWithClaude(key) {
+  if (!cvFileData) return null;
+  const base64 = cvFileData.data.split(',')[1];
+  const isPDF = cvFileData.type === 'application/pdf';
+  const contentParts = isPDF
+    ? [{ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+       { type: 'text', text: 'Витягни з цього CV: повне ім\'я, поточна посада, поточна компанія. Відповідь ЛИШЕ у форматі JSON: {"name":"","title":"","company":""}' }]
+    : [{ type: 'text', text: 'Витягни з цього тексту CV: повне ім\'я, поточна посада, поточна компанія. Лише JSON: {"name":"","title":"","company":""}. CV далі:\n\n' + atob(base64) }];
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 200, messages: [{ role: 'user', content: contentParts }] })
+  });
+  const data = await resp.json();
+  const text = data.content?.map(b => b.text || '').join('') || '';
+  try { return JSON.parse(text.replace(/```json|```/g, '').trim()); } catch { return null; }
+}
+
+function buildFormatInstruction(fmt, clientName) {
+  const greeting = clientName ? `${clientName}, доброго дня!\n` : '';
+  switch(fmt) {
+    case 'resorcer':
+      return `Дотримуйся шаблону Resorcer ТОЧНО. Починай з "${greeting}Презентуємо кандидата на позицію [роль], [ПІБ]." потім використовуй точні заголовки розділів із шаблону. Це стандартна клієнтська презентація Resorcer.`;
+    case 'email':
+      return `Формат: готовий лист для надсилання. Починай з "${greeting}" потім короткий вступ (2 речення), далі стислий структурований профіль. Завершуй закликом до дії: "Готові організувати зустріч — дайте знати зручний час." До 250 слів. Тон: професійний, теплий.`;
+    case 'narrative':
+      return `Пиши суцільними абзацами без буліт-пунктів. Розкажи кар'єрну історію кандидата як довірений партнер, що рекомендує колезі. Заголовки розділів допустимі, але зміст — наративна проза. Тон: теплий, впевнений, чесний.`;
+    case 'structured':
+      return `Використовуй чіткі заголовки розділів і буліт-пункти по всьому тексту. Оптимізовано для швидкого перегляду. Кожен пункт — максимум 1 речення. На початку — TL;DR-резюме (до 3 буліт-пунктів).`;
+    case 'ashby':
+      return `Формат: стисла внутрішня нотатка для ATS. Без звернення. Звичайний текст, без форматування. Розділи: Бекграунд | Ключові сильні сторони | Ризики | Компенсація | Локація | Рекомендація. Кожен розділ — до 2–3 рядків. Для внутрішнього використання, не для клієнта.`;
+    default:
+      return '';
+  }
+}
+
+async function generateProfile() {
+  const { anthropic } = getKeys();
+  if (!anthropic) { setStatus('Спочатку введіть Anthropic API-ключ', true); return; }
+  const notes = document.getElementById('cand-notes').value.trim();
+  if (!notes && !cvFileData) { setStatus('Додайте нотатки або завантажте CV', true); return; }
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  document.getElementById('gen-label').innerHTML = '<span class="spinner"></span> Генерується...';
+  document.getElementById('output-card').classList.remove('visible');
+
+  let name = document.getElementById('cand-name').value.trim();
+  let role = document.getElementById('cand-role').value.trim();
+
+  if (cvFileData && (!name || !role)) {
+    setStatus('Аналіз CV...');
+    try {
+      const parsed = await parseCVWithClaude(anthropic);
+      if (parsed) {
+        if (!name && parsed.name) { name = parsed.name; document.getElementById('cand-name').value = name; }
+        if (!role && (parsed.title || parsed.company)) {
+          role = [parsed.title, parsed.company].filter(Boolean).join(' · ');
+          document.getElementById('cand-role').value = role;
+        }
+      }
+    } catch(e) {}
+  }
+
+  setStatus('Генерується профіль...');
+
+  const lang = document.getElementById('cand-lang').value;
+  const rec = document.getElementById('cand-rec').value;
+  const clientName = document.getElementById('client-name').value.trim();
+  const recruiterSig = document.getElementById('recruiter-sig').value.trim();
+  const styleNotes = document.getElementById('style-notes').value.trim();
+  const globalInstruction = document.getElementById('global-instruction').value.trim();
+  const requiredSections = document.getElementById('required-sections').value.trim();
+  const baseTemplate = document.getElementById('base-template').value.trim();
+  const fmt = selectedFormat;
+
+  const langInstruction = lang === 'english' ? 'Пиши повністю англійською мовою.'
+    : lang === 'both' ? 'Пиши спочатку українською, потім повний переклад англійською нижче, розділені "---".'
+    : 'Пиши українською мовою.';
+
+  const recInstruction = rec === 'auto' ? 'Зроби чесну рекомендацію на основі нотаток і контексту.'
+    : `Рекомендація рекрутера: ${rec}. Чітко відобрази це у профілі.`;
+
+  const styleInstruction = styleExamples
+    ? `\n\nПРИКЛАДИ ОСОБИСТОГО СТИЛЮ — перейми тон, формулювання та структуру з цих прикладів:\n${styleExamples.slice(0, 2000)}`
+    : '';
+
+  const sigInstruction = recruiterSig ? `\n\nЗавершуй профіль підписом: "${recruiterSig}"` : '';
+  const globalInst = globalInstruction ? `\n\nОБОВ'ЯЗКОВО ВКЛЮЧАТИ: ${globalInstruction}` : '';
+  const styleNoteInst = styleNotes ? `\n\nНОТАТКИ ПРО СТИЛЬ РЕКРУТЕРА: ${styleNotes}` : '';
+
+  const prompt = `Ти генеруєш презентацію кандидата для Resorcer — українського рекрутингового агентства, відомого чесними та глибокими профілями кандидатів, які допомагають клієнтам приймати кращі рішення щодо найму.
+
+БАЗОВИЙ ШАБЛОН:
+${baseTemplate}
+
+ОБОВ'ЯЗКОВІ РОЗДІЛИ: ${requiredSections}
+
+ІНСТРУКЦІЯ ЩОДО ФОРМАТУ: ${buildFormatInstruction(fmt, clientName)}
+
+${langInstruction}
+${recInstruction}${globalInst}${styleNoteInst}${sigInstruction}${styleInstruction}
+
+ДАНІ КАНДИДАТА:
+Ім'я: ${name || 'невідомо — визначи з нотаток якщо можливо'}
+Позиція: ${role || 'не вказано'}
+${notes ? 'Нотатки / транскрипція:\n' + notes : '(нотаток немає — працюй лише з контекстом CV)'}
+
+Генеруй профіль зараз. Будь чесним, конкретним, уникай загальних фраз. Якість цієї презентації відображає репутацію Resorcer.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': anthropic, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1200, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.content.map(b => b.text || '').join('');
+
+    const initials = (name || 'КА').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+    document.getElementById('out-avatar').textContent = initials;
+    document.getElementById('out-name').textContent = name || 'Кандидат';
+    document.getElementById('out-role-label').textContent = role || document.getElementById('cand-type').options[document.getElementById('cand-type').selectedIndex].text;
+    document.getElementById('out-body').textContent = text;
+
+    const fmtLabels = { resorcer: 'Стандарт Resorcer', email: 'Готовий лист', narrative: 'Наратив', structured: 'Структурований', ashby: 'Нотатка Ashby' };
+    const bar = document.getElementById('output-fmt-bar');
+    bar.innerHTML = Object.entries(fmtLabels).map(([k,v]) =>
+      `<button class="fmt-btn${k === fmt ? ' active' : ''}" onclick="regenerateFormat('${k}', this)">${v}</button>`
+    ).join('');
+
+    document.getElementById('output-card').classList.add('visible');
+    document.getElementById('output-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setStatus('');
+  } catch(e) { setStatus('Помилка: ' + e.message, true); }
+
+  btn.disabled = false;
+  document.getElementById('gen-label').textContent = 'Створити профіль';
+}
+
+async function regenerateFormat(fmt, btn) {
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedFormat = fmt;
+  document.querySelectorAll('.format-pills .pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.fmt === fmt);
+  });
+  await generateProfile();
+}
+
+function copyProfile() {
+  const text = document.getElementById('out-body').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.btn-copy');
+    btn.textContent = 'Скопійовано!';
+    setTimeout(() => btn.textContent = 'Копіювати', 1800);
+  });
+}
+
+function clearAll() {
+  ['cand-name','cand-role','cand-notes','client-name'].forEach(id => document.getElementById(id).value = '');
+  ['cv-zone','audio-zone'].forEach(id => document.getElementById(id).classList.remove('has-file'));
+  document.getElementById('cv-label').textContent = "Завантажте CV — автозаповнить ім'я, посаду, компанію";
+  document.getElementById('audio-label').textContent = 'Завантажте запис → Gemini транскрибує українською';
+  document.getElementById('transcribe-btn').style.display = 'none';
+  document.getElementById('output-card').classList.remove('visible');
+  cvFileData = null; audioFileData = null;
+  setStatus('');
+}
+</script>
+</body>
+</html>
